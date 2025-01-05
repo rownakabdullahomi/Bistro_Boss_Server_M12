@@ -40,45 +40,66 @@ async function run() {
       res.send(result);
     })
 
-    app.post("/users", async (req, res)=>{
+    app.post("/users", async (req, res) => {
       const user = req.body;
       // check if the user already exists...
-      const query = {email: user.email}
+      const query = { email: user.email }
       const existingUser = await userCollection.findOne(query);
 
-      if(existingUser){
-        return res.send({message: "user already exists", insertedId: null});
+      if (existingUser) {
+        return res.send({ message: "user already exists", insertedId: null });
       }
       const result = await userCollection.insertOne(user);
       res.send(result);
     })
 
-    app.get("/menu", async(req, res)=>{
-        const result = await menuCollection.find().toArray();
-        res.send(result);
+    app.delete("users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
     })
-    app.get("/reviews", async(req, res)=>{
-        const result = await reviewsCollection.find().toArray();
-        res.send(result);
+
+    app.patch("users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+          role: "admin"
+        }
+      }
+      const result = await userCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    })
+
+
+    // menu related api
+    app.get("/menu", async (req, res) => {
+      const result = await menuCollection.find().toArray();
+      res.send(result);
+    })
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewsCollection.find().toArray();
+      res.send(result);
     })
 
     // carts collection
-    app.get("/carts", async(req, res)=>{
+    app.get("/carts", async (req, res) => {
       const email = req.query.email;
-      const query = {email: email};
+      const query = { email: email };
       const result = await cartCollection.find(query).toArray();
       res.send(result)
     })
 
 
-    app.post("/carts", async(req, res)=>{
+    app.post("/carts", async (req, res) => {
       const result = await cartCollection.insertOne(req.body);
       res.send(result);
     })
 
-    app.delete("/carts/:id", async(req, res) => {
+    app.delete("/carts/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await cartCollection.deleteOne(query);
       res.send(result);
     })
@@ -107,11 +128,11 @@ run().catch(console.dir);
 
 
 
-app.get("/", (req, res)=>{
-    res.send("Boss is coming");
+app.get("/", (req, res) => {
+  res.send("Boss is coming");
 })
 
-app.listen(port, ()=>{
-    console.log(`Boss is coming on port ${port}`);
+app.listen(port, () => {
+  console.log(`Boss is coming on port ${port}`);
 })
 
