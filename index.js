@@ -65,11 +65,11 @@ async function run() {
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
-      const query = {email: email};
+      const query = { email: email };
       const user = await userCollection.findOne(query);
       const isAdmin = user?.role === "admin";
-      if(!isAdmin){
-        return res.status(403).send({message: "forbidden access"});
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
       }
       next();
     }
@@ -89,10 +89,10 @@ async function run() {
       const query = { email: email };
       const user = await userCollection.findOne(query);
       let admin = false;
-      if(user){
+      if (user) {
         admin = user?.role === "admin";
       }
-      res.send({admin});
+      res.send({ admin });
     })
 
     app.post("/users", async (req, res) => {
@@ -134,27 +134,27 @@ async function run() {
       res.send(result);
     })
 
-    app.get("/menu/:id", async(req, res)=>{
+    app.get("/menu/:id", async (req, res) => {
       const id = req.params.id;
       console.log(id);
-      const query = {_id: id};
+      const query = { _id: id };
       const result = await menuCollection.findOne(query);
       // console.log(result);
       res.send(result);
     })
 
-    app.post("/menu", verifyToken, verifyAdmin, async(req, res) => {
+    app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
       const item = req.body;
       const result = await menuCollection.insertOne(item);
       res.send(result);
     })
 
-    app.patch("/menu/:id", async(req, res)=>{
+    app.patch("/menu/:id", async (req, res) => {
       const item = req.body;
       const id = req.params.id;
-      const query = {_id: id};
+      const query = { _id: id };
       const updatedDoc = {
-        $set:{
+        $set: {
           name: item.name,
           category: item.category,
           price: item.price,
@@ -171,9 +171,9 @@ async function run() {
       res.send(result);
     })
 
-    app.delete("/menu/:id", verifyToken, verifyAdmin, async(req, res)=>{
+    app.delete("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await menuCollection.deleteOne(query);
       res.send(result);
     })
@@ -200,8 +200,8 @@ async function run() {
     })
 
 
-     // payment intent
-     app.post('/create-payment-intent', async (req, res) => {
+    // payment intent
+    app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
       console.log(amount, 'amount inside the intent')
@@ -273,6 +273,40 @@ async function run() {
         revenue
       })
     })
+
+    // order-stats
+    app.get("/order-stats", async (req, res) => {
+      const result = await paymentCollection.aggregate([
+        {
+          $unwind: "$menuItemIds"
+        },
+
+        {
+          $lookup: {
+            from: "menu",
+            localField: "menuItemIds",
+            foreignField: "_id",
+            as: "menuItems"
+          }
+        },
+        {
+          $unwind: "$menuItems"
+        },
+        {
+          $group: {
+            _id: "$menuItems.category",
+            quantity: {
+              $sum: 1
+            },
+            revenue: {
+              $sum: "$menuItems.price"
+            }
+          }
+        }
+      ]).toArray();
+      res.send(result)
+    })
+
 
 
 
